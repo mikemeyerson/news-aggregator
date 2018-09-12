@@ -248,41 +248,42 @@ APP.Main = (function() {
     setTimeout(animate, 4);
   }
 
-  /**
-   * Does this really add anything? Can we do this kind
-   * of work in a cheaper way?
-   */
+  // Removed layout thrashing by batching DOM reads vs. writes
   function colorizeAndScaleStories() {
 
-    var storyElements = document.querySelectorAll('.story');
+    const storyElements = Array.from(document.querySelectorAll('.story'));
+    // Base the scale on the y position of the score.
+    const height = main.offsetHeight;
+    const mainPosition = main.getBoundingClientRect();
+    const bodyTop = document.body.getBoundingClientRect().top;
 
     // It does seem awfully broad to change all the
     // colors every time!
-    for (var s = 0; s < storyElements.length; s++) {
+    const newStyles = storyElements
+      .map((el) => {
+        const score = el.querySelector('.story__score');
+        const title = el.querySelector('.story__title');
+        const scoreLocation = score.getBoundingClientRect().top - bodyTop;
+        const scale = Math.min(1, 1 - (0.05 * ((scoreLocation - 170) / height)));
+        const opacity = Math.min(1, 1 - (0.5 * ((scoreLocation - 170) / height)));
 
-      var story = storyElements[s];
-      var score = story.querySelector('.story__score');
-      var title = story.querySelector('.story__title');
+        return {
+          scale,
+          opacity,
+          score,
+          title
+        };
+      })
+      .forEach(({ opacity, scale, score, title }) => {
+        const size = `${scale * 40}px`;
+        const saturation = 100 * ((size - 38) / 2);
 
-      // Base the scale on the y position of the score.
-      var height = main.offsetHeight;
-      var mainPosition = main.getBoundingClientRect();
-      var scoreLocation = score.getBoundingClientRect().top -
-          document.body.getBoundingClientRect().top;
-      var scale = Math.min(1, 1 - (0.05 * ((scoreLocation - 170) / height)));
-      var opacity = Math.min(1, 1 - (0.5 * ((scoreLocation - 170) / height)));
-
-      score.style.width = (scale * 40) + 'px';
-      score.style.height = (scale * 40) + 'px';
-      score.style.lineHeight = (scale * 40) + 'px';
-
-      // Now figure out how wide it is and use that to saturate it.
-      scoreLocation = score.getBoundingClientRect();
-      var saturation = (100 * ((scoreLocation.width - 38) / 2));
-
-      score.style.backgroundColor = 'hsl(42, ' + saturation + '%, 50%)';
-      title.style.opacity = opacity;
-    }
+        score.style.width = size;
+        score.style.height = size;
+        score.style.lineHeight = size;
+        score.style.backgroundColor = `hsl(42, ${saturation}%, 50%)`;
+        title.style.opacity = opacity;
+      });
   }
 
   main.addEventListener('touchstart', function(evt) {
