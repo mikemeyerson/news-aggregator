@@ -275,12 +275,12 @@ APP.Main = (function() {
         };
       })
       .forEach(({ opacity, scale, score, title }) => {
-        const size = `${scale * 40}px`;
+        const size = scale * 40;
         const saturation = 100 * ((size - 38) / 2);
 
-        score.style.width = size;
-        score.style.height = size;
-        score.style.lineHeight = size;
+        score.style.width = `${size}px`;
+        score.style.height = `${size}px`;
+        score.style.lineHeight = `${size}px`;
         score.style.backgroundColor = `hsl(42, ${saturation}%, 50%)`;
         title.style.opacity = opacity;
       });
