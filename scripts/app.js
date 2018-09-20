@@ -62,31 +62,27 @@ APP.Main = (function() {
    * probably in a requestAnimationFrame callback.
    */
   function onStoryData (key, details) {
+    requestAnimationFrame(() => {
+      const story = document.createElement('div');
 
-    // This seems odd. Surely we could just select the story
-    // directly rather than looping through all of them.
-    var storyElements = document.querySelectorAll('.story');
+      story.setAttribute('id', `s-${key}`);
+      story.classList.add('story');
+      story.classList.add('clickable');
+      story.addEventListener('click', onStoryClick.bind(this, details));
 
-    for (var i = 0; i < storyElements.length; i++) {
+      details.time *= 1000;
+      const html = storyTemplate(details);
+      story.innerHTML = html;
 
-      if (storyElements[i].getAttribute('id') === 's-' + key) {
+      main.appendChild(story);
 
-        details.time *= 1000;
-        var story = storyElements[i];
-        var html = storyTemplate(details);
-        story.innerHTML = html;
-        story.addEventListener('click', onStoryClick.bind(this, details));
-        story.classList.add('clickable');
+      // Tick down. When zero we can batch in the next load.
+      storyLoadCount--;
 
-        // Tick down. When zero we can batch in the next load.
-        storyLoadCount--;
-
-      }
-    }
-
-    // Colorize on complete.
-    if (storyLoadCount === 0)
-      colorizeAndScaleStories();
+      // Colorize on complete.
+      if (storyLoadCount === 0)
+        colorizeAndScaleStories();
+    });
   }
 
   function onStoryClick(details) {
@@ -286,16 +282,6 @@ APP.Main = (function() {
       });
   }
 
-  main.addEventListener('touchstart', function(evt) {
-
-    // I just wanted to test what happens if touchstart
-    // gets canceled. Hope it doesn't block scrolling on mobiles...
-    if (Math.random() > 0.97) {
-      evt.preventDefault();
-    }
-
-  });
-
   main.addEventListener('scroll', function() {
 
     var header = $('header');
@@ -323,35 +309,24 @@ APP.Main = (function() {
   });
 
   function loadStoryBatch() {
-
-    if (storyLoadCount > 0)
+    if (storyLoadCount > 0) {
       return;
+    }
 
     storyLoadCount = count;
 
-    var end = storyStart + count;
-    for (var i = storyStart; i < end; i++) {
+    const end = storyStart + count;
+    for (let i = storyStart; i < end; i++) {
 
       if (i >= stories.length)
         return;
 
-      var key = String(stories[i]);
-      var story = document.createElement('div');
-      story.setAttribute('id', 's-' + key);
-      story.classList.add('story');
-      story.innerHTML = storyTemplate({
-        title: '...',
-        score: '-',
-        by: '...',
-        time: 0
-      });
-      main.appendChild(story);
+      const key = String(stories[i]);
 
       APP.Data.getStoryById(stories[i], onStoryData.bind(this, key));
     }
 
     storyStart += count;
-
   }
 
   // Bootstrap in the stories.
